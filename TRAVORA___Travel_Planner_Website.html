@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 selection:bg-blue-600 selection:text-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TRAVORA — Travel Planner Website</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#030712',
+              900: '#090d16',
+              850: '#111827',
+              800: '#1f2937',
+              700: '#374151'
+            },
+            electric: {
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              950: '#172554'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+    
+    .glass-card {
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-nav {
+      background: rgba(9, 13, 22, 0.95);
+    }
+
+    /* Crisp Dynamic Spotlight Ring (No Blur / No Dimming) */
+    .tutorial-spotlight {
+      position: relative !important;
+      z-index: 1000 !important;
+      pointer-events: auto !important;
+      box-shadow: 0 0 0 4px #2563eb, 0 0 35px rgba(37, 99, 235, 0.85) !important;
+      border-radius: 1rem !important;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: pulseSpotlight 1.8s infinite alternate;
+    }
+
+    /* Modal Spotlight Override */
+    .tutorial-spotlight-modal {
+      z-index: 1005 !important;
+      pointer-events: auto !important;
+      box-shadow: 0 0 0 4px #3b82f6, 0 0 40px rgba(59, 130, 246, 0.9) !important;
+    }
+
+    @keyframes pulseSpotlight {
+      0% { box-shadow: 0 0 0 3px #2563eb, 0 0 20px rgba(37, 99, 235, 0.5); }
+      100% { box-shadow: 0 0 0 6px #60a5fa, 0 0 45px rgba(59, 130, 246, 0.9); }
+    }
+
+    @keyframes toastSlide {
+      from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .toast-animate {
+      animation: toastSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    html, body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-obsidian-950 text-slate-100">
+
+  <!-- Toast Feedback System -->
+  <div id="toast-container" class="fixed top-4 right-4 sm:right-6 z-[1100] flex flex-col gap-2.5 pointer-events-none max-w-xs sm:max-w-md w-full"></div>
+
+  <!-- Mobile Drawer Overlay Backdrop -->
+  <div id="mobile-sidebar-backdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-obsidian-950/80 z-40 hidden lg:hidden transition-opacity"></div>
+
+  <div class="flex h-screen overflow-hidden relative">
+
+    <!-- DESKTOP & MOBILE SIDEBAR -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-50 w-72 bg-obsidian-900/95 border-r border-slate-800 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-out glass-nav">
+      
+      <!-- App Brand Header -->
+      <div class="p-5 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-600/30 font-black text-xl">
+            <i class="fa-solid fa-plane-departure"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight text-white font-mono">TRAVORA</h1>
+            <p class="text-[9px] text-blue-400 font-bold tracking-widest uppercase">Precision Travel Suite</p>
+          </div>
+        </div>
+        <button onclick="toggleSidebar(false)" class="lg:hidden text-slate-400 hover:text-white p-2 rounded-xl hover:bg-obsidian-800">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Active Trip Selector Context Box -->
+      <div id="tut-target-context" class="p-4 border-b border-slate-800 bg-obsidian-950/60">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Trip Context</label>
+          <span class="text-[9px] text-blue-400 bg-blue-950/80 px-2 py-0.5 rounded-full border border-blue-800/80 font-bold font-mono">Synced</span>
+        </div>
+        <select id="active-trip-select" onchange="changeActiveTrip(this.value)" class="w-full bg-obsidian-900 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 transition-all font-medium cursor-pointer">
+          <!-- Dynamically Populated -->
+        </select>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1.5">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-chart-pie w-5 text-center text-blue-400 text-sm"></i> Dashboard
+        </button>
+        <button onclick="switchTab('trips')" id="nav-trips" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-map-location-dot w-5 text-center text-indigo-400 text-sm"></i> My Trips
+        </button>
+        <button onclick="switchTab('itinerary')" id="nav-itinerary" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-calendar-days w-5 text-center text-sky-400 text-sm"></i> Itinerary Builder
+        </button>
+        <button onclick="switchTab('expenses')" id="nav-expenses" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-wallet w-5 text-center text-emerald-400 text-sm"></i> Budget & Expenses
+        </button>
+        <button onclick="switchTab('packing')" id="nav-packing" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-suitcase w-5 text-center text-amber-400 text-sm"></i> Packing Checklist
+        </button>
+        <button onclick="switchTab('reservations')" id="nav-reservations" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-ticket w-5 text-center text-rose-400 text-sm"></i> Reservation Vault
+        </button>
+        <button onclick="switchTab('notes')" id="nav-notes" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-note-sticky w-5 text-center text-purple-400 text-sm"></i> Trip Notes
+        </button>
+        <button onclick="switchTab('backup')" id="nav-backup" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-database w-5 text-center text-teal-400 text-sm"></i> Backup & Data
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all text-slate-400 hover:text-white hover:bg-obsidian-800">
+          <i class="fa-solid fa-user-gear w-5 text-center text-slate-400 text-sm"></i> Profile Setup
+        </button>
+      </nav>
+
+      <!-- Sidebar User Profile Footer -->
+      <div class="p-4 border-t border-slate-800 bg-obsidian-950/80 flex items-center justify-between">
+        <div onclick="switchTab('profile')" class="flex items-center gap-3 min-w-0 cursor-pointer hover:opacity-85 transition-opacity">
+          <div class="w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center font-bold text-slate-950 flex-shrink-0 text-sm shadow-md" id="sidebar-user-avatar">
+            A
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-slate-200 truncate" id="sidebar-user-name">Traveler</p>
+            <p class="text-[10px] text-slate-500 truncate" id="sidebar-user-handle">@traveler</p>
+          </div>
+        </div>
+        <button onclick="startInteractiveTutorial()" title="Restart Interactive Tutorial" class="p-2 text-slate-400 hover:text-blue-400 hover:bg-obsidian-800 rounded-xl transition-colors">
+          <i class="fa-solid fa-graduation-cap text-base"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN APP CANVAS AREA -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+
+      <!-- Top Glass Navbar -->
+      <header class="glass-nav border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+          <button onclick="toggleSidebar(true)" class="lg:hidden p-2 text-slate-300 hover:text-white rounded-xl hover:bg-obsidian-800 transition-colors">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+          <h2 id="page-title" class="text-base sm:text-lg font-bold text-white font-mono">Dashboard</h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="tut-target-newtrip-btn" onclick="openModal('modal-trip')" class="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-xs"></i> <span class="hidden sm:inline">New Trip</span>
+          </button>
+          <button onclick="startInteractiveTutorial()" class="hidden md:flex bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium transition-colors items-center gap-2 border border-slate-700">
+            <i class="fa-solid fa-graduation-cap text-blue-400"></i> Interactive Guide
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Main Content -->
+      <main id="main-scroll-view" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-24 sm:pb-8">
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="tab-content space-y-6">
+          <div class="glass-card rounded-2xl p-6 relative overflow-hidden border border-slate-800 bg-gradient-to-r from-obsidian-900 via-obsidian-850 to-electric-950/40">
+            <div class="relative z-10 max-w-2xl space-y-2">
+              <span class="px-2.5 py-1 rounded-full bg-blue-950 border border-blue-800/80 text-[10px] text-blue-400 font-bold uppercase tracking-wider font-mono">Control Center</span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Welcome back, <span id="dash-user-name" class="text-blue-400">Traveler</span>!</h2>
+              <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">Organize itinerary schedules, manage budget limits, track gear, and store travel reservations.</p>
+            </div>
+            <i class="fa-solid fa-paper-plane absolute -right-6 -bottom-8 text-9xl text-slate-800/10 pointer-events-none transform -rotate-12"></i>
+          </div>
+
+          <div id="dash-countdown-card" class="glass-card rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border-l-4 border-l-blue-500 shadow-xl">
+            <div class="flex items-center gap-4 w-full sm:w-auto">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl flex-shrink-0 border border-blue-500/20">
+                <i class="fa-solid fa-stopwatch"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Upcoming Departure Countdown</p>
+                <h3 id="dash-countdown-trip-name" class="text-base font-bold text-white truncate">No Upcoming Trips</h3>
+                <p id="dash-countdown-subtext" class="text-xs text-slate-400 truncate">Create a trip to activate departure countdowns</p>
+              </div>
+            </div>
+            <div id="dash-countdown-timer" class="flex gap-2.5 text-center font-mono w-full sm:w-auto justify-center">
+              <div class="bg-obsidian-950 px-3.5 py-2 rounded-xl border border-slate-800 min-w-[65px]">
+                <span id="cd-days" class="block text-lg font-bold text-blue-400">00</span>
+                <span class="text-[9px] uppercase text-slate-400 font-bold">Days</span>
+              </div>
+              <div class="bg-obsidian-950 px-3.5 py-2 rounded-xl border border-slate-800 min-w-[65px]">
+                <span id="cd-hours" class="block text-lg font-bold text-blue-400">00</span>
+                <span class="text-[9px] uppercase text-slate-400 font-bold">Hours</span>
+              </div>
+              <div class="bg-obsidian-950 px-3.5 py-2 rounded-xl border border-slate-800 min-w-[65px]">
+                <span id="cd-mins" class="block text-lg font-bold text-blue-400">00</span>
+                <span class="text-[9px] uppercase text-slate-400 font-bold">Mins</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="tut-target-metrics" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="glass-card p-4 sm:p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Trips</p>
+                <p id="dash-total-trips" class="text-xl sm:text-2xl font-extrabold text-white mt-1 font-mono">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg border border-indigo-500/20">
+                <i class="fa-solid fa-earth-americas"></i>
+              </div>
+            </div>
+            <div class="glass-card p-4 sm:p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Activities</p>
+                <p id="dash-total-activities" class="text-xl sm:text-2xl font-extrabold text-white mt-1 font-mono">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center text-lg border border-sky-500/20">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+            </div>
+            <div class="glass-card p-4 sm:p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Expenses</p>
+                <p id="dash-total-expenses" class="text-xl sm:text-2xl font-extrabold text-white mt-1 font-mono">$0.00</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+            </div>
+            <div class="glass-card p-4 sm:p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Packed Gear</p>
+                <p id="dash-packing-status" class="text-xl sm:text-2xl font-extrabold text-white mt-1 font-mono">0 / 0</p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg border border-amber-500/20">
+                <i class="fa-solid fa-suitcase"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass-card rounded-2xl p-5 sm:p-6 lg:col-span-2 space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-sm flex items-center gap-2 font-mono">
+                  <i class="fa-solid fa-compass text-blue-400"></i> Active Trip Quick Overview
+                </h3>
+                <button onclick="switchTab('trips')" class="text-xs text-blue-400 hover:underline font-semibold">Manage Trips</button>
+              </div>
+              <div id="dash-active-trip-view" class="space-y-4"></div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-4">
+              <h3 class="font-bold text-white text-sm border-b border-slate-800 pb-3 flex items-center gap-2 font-mono">
+                <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> Activity Stream
+              </h3>
+              <div id="dash-activity-log" class="space-y-2.5 text-xs max-h-72 overflow-y-auto pr-1">
+                <p class="text-slate-500 text-center py-4">No recent activity logged.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TRIPS TAB -->
+        <section id="tab-trips" class="tab-content space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Trip Collections</h3>
+              <p class="text-xs text-slate-400">Manage all your upcoming and past travel itineraries.</p>
+            </div>
+            <button onclick="openModal('modal-trip')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-plus"></i> Create New Trip
+            </button>
+          </div>
+
+          <div id="trips-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- ITINERARY TAB -->
+        <section id="tab-itinerary" class="tab-content space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Itinerary Builder</h3>
+              <p class="text-xs text-slate-400">Chronological activity timeline for your selected active trip.</p>
+            </div>
+            <button id="tut-target-add-activity-btn" onclick="openModal('modal-activity')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-plus"></i> Add Activity
+            </button>
+          </div>
+
+          <div id="itinerary-list" class="glass-card rounded-2xl p-5 sm:p-6 space-y-4"></div>
+        </section>
+
+        <!-- EXPENSES TAB -->
+        <section id="tab-expenses" class="tab-content space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Budget & Expense Tracker</h3>
+              <p class="text-xs text-slate-400">Log expenses and track your spending against your budget limit.</p>
+            </div>
+            <button id="tut-target-add-expense-btn" onclick="openModal('modal-expense')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-plus"></i> Record Expense
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="tut-target-budget-card" class="glass-card p-6 rounded-2xl space-y-4 border border-slate-800">
+              <h4 class="font-bold text-sm text-slate-200 font-mono border-b border-slate-800 pb-2">Budget Overview</h4>
+              <div class="space-y-3 text-xs">
+                <div class="flex justify-between"><span class="text-slate-400">Total Budget:</span> <span id="budget-total" class="font-bold font-mono text-slate-200">$0.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Total Spent:</span> <span id="budget-spent" class="font-bold font-mono text-blue-400">$0.00</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Remaining Balance:</span> <span id="budget-remaining" class="font-bold font-mono text-sky-400">$0.00</span></div>
+              </div>
+              <div class="space-y-1 pt-2">
+                <div class="flex justify-between text-[10px] font-bold text-slate-400">
+                  <span>Usage Progress</span>
+                  <span id="budget-percent-text">0%</span>
+                </div>
+                <div class="w-full bg-obsidian-950 rounded-full h-3 overflow-hidden border border-slate-800">
+                  <div id="budget-progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-2xl lg:col-span-2 space-y-4 border border-slate-800">
+              <h4 class="font-bold text-sm text-slate-200 font-mono border-b border-slate-800 pb-2">Category Spending Breakdown</h4>
+              <div id="expense-category-breakdown" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+            <div class="p-4 border-b border-slate-800 bg-obsidian-950/60 font-mono font-bold text-xs text-slate-200">
+              Itemized Expenses
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[10px] text-slate-400 uppercase tracking-wider font-mono bg-obsidian-900/50">
+                    <th class="py-3 px-3">Date</th>
+                    <th class="py-3 px-3">Category</th>
+                    <th class="py-3 px-3">Notes</th>
+                    <th class="py-3 px-3 text-right">Amount</th>
+                    <th class="py-3 px-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="expense-table-body" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PACKING TAB -->
+        <section id="tab-packing" class="tab-content space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Packing Checklist</h3>
+              <p class="text-xs text-slate-400">Track gear, documents, and apparel needed for your journey.</p>
+            </div>
+            <button id="tut-target-add-packing-btn" onclick="openModal('modal-packing')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-plus"></i> Add Item
+            </button>
+          </div>
+
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center text-xs font-mono font-bold">
+              <span class="text-slate-300">Overall Packing Progress</span>
+              <span id="packing-progress-text" class="text-blue-400">0% Packed</span>
+            </div>
+            <div class="w-full bg-obsidian-950 rounded-full h-3 overflow-hidden border border-slate-800">
+              <div id="packing-progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div id="packing-categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- RESERVATIONS TAB -->
+        <section id="tab-reservations" class="tab-content space-y-6 hidden">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Reservation Vault</h3>
+              <p class="text-xs text-slate-400">Store confirmation codes, flight info, and hotel vouchers safely.</p>
+            </div>
+            <button id="tut-target-add-res-btn" onclick="openModal('modal-reservation')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-600/30">
+              <i class="fa-solid fa-plus"></i> Add Booking
+            </button>
+          </div>
+
+          <div id="reservations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- NOTES TAB -->
+        <section id="tab-notes" class="tab-content space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-lg font-bold text-white font-mono">Trip Notes Notepad</h3>
+              <p class="text-xs text-slate-400">Freeform notes automatically saved to browser storage.</p>
+            </div>
+            <div id="notes-save-status" class="text-xs text-blue-400 font-mono font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-check-circle"></i> Saved
+            </div>
+          </div>
+
+          <div id="tut-target-notes-area" class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+            <textarea id="trip-notes-textarea" oninput="handleNotesInput()" rows="14" class="w-full bg-obsidian-950/80 border border-slate-800 text-slate-100 text-xs sm:text-sm rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all font-mono leading-relaxed" placeholder="Type trip notes, emergency contacts, dining ideas, or flight details here..."></textarea>
+            <div class="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+              <span id="notes-word-count">0 words</span>
+              <span>Debounced localStorage sync</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- BACKUP & PORTABILITY TAB -->
+        <section id="tab-backup" class="tab-content space-y-6 hidden">
+          <div>
+            <h3 class="text-lg font-bold text-white font-mono">Data Portability & Offline Backup</h3>
+            <p class="text-xs text-slate-400">Export and import your entire trip database or individual itineraries in JSON format.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div id="tut-target-export" class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+              <div class="flex items-center gap-3 text-blue-400">
+                <i class="fa-solid fa-file-export text-xl"></i>
+                <h4 class="font-bold text-sm text-white font-mono">Export Data Snapshot</h4>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">Download your complete travel planner database as a formatted JSON snapshot for safe keeping or backup purposes.</p>
+              <div class="flex flex-col gap-2 pt-2">
+                <button onclick="exportActiveTripJSON()" class="bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-file-arrow-down"></i> Export Active Trip JSON
+                </button>
+                <button onclick="exportAllDataJSON()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-600/30">
+                  <i class="fa-solid fa-database"></i> Export Full Database JSON
+                </button>
+              </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-2xl border border-slate-800 space-y-4">
+              <div class="flex items-center gap-3 text-indigo-400">
+                <i class="fa-solid fa-file-import text-xl"></i>
+                <h4 class="font-bold text-sm text-white font-mono">Restore & Import Snapshot</h4>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">Restore your trip dataset by uploading a previously exported TRAVORA JSON backup file.</p>
+              <div class="pt-2">
+                <label class="block w-full cursor-pointer bg-obsidian-900 hover:bg-obsidian-800 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-4 text-center transition-all">
+                  <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 mb-2"></i>
+                  <span class="block text-xs font-bold text-slate-200">Select JSON Backup File</span>
+                  <span class="block text-[10px] text-slate-500 mt-1">Accepts .json backup files</span>
+                  <input type="file" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE TAB -->
+        <section id="tab-profile" class="tab-content space-y-6 hidden">
+          <div>
+            <h3 class="text-lg font-bold text-white font-mono">Profile & Preferences</h3>
+            <p class="text-xs text-slate-400">Personalize your display identity, home airport, and default currency symbol.</p>
+          </div>
+
+          <div id="profile-form" class="glass-card p-6 rounded-2xl border border-slate-800 max-w-2xl space-y-5">
+            <form onsubmit="saveProfile(event)" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">Display Name</label>
+                  <input type="text" id="prof-display-name" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">Handle</label>
+                  <input type="text" id="prof-handle" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">Home Airport / City</label>
+                  <input type="text" id="prof-home-city" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-300 mb-1">Preferred Currency Symbol</label>
+                  <select id="prof-currency" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <option value="$">USD ($)</option>
+                    <option value="€">EUR (€)</option>
+                    <option value="£">GBP (£)</option>
+                    <option value="¥">JPY (¥)</option>
+                    <option value="A$">AUD (A$)</option>
+                    <option value="C$">CAD (C$)</option>
+                    <option value="₹">INR (₹)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Avatar Accent Color</label>
+                <input type="color" id="prof-avatar-color" value="#2563eb" class="w-full h-10 bg-obsidian-950 border border-slate-800 rounded-xl p-1 cursor-pointer">
+              </div>
+
+              <div class="pt-2 flex justify-end">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/30">
+                  Save Preferences
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL DIALOGS -->
+
+  <!-- TRIP MODAL -->
+  <div id="modal-trip" class="modal-dialog fixed inset-0 z-[1050] bg-obsidian-950/80 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-obsidian-950/60">
+        <h3 id="modal-trip-title" class="font-bold text-white text-sm font-mono">Create New Trip</h3>
+        <button onclick="closeModal('modal-trip')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="form-trip" onsubmit="saveTripForm(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="trip-id">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Trip Name *</label>
+          <input type="text" id="trip-name" required placeholder="e.g., Tokyo & Kyoto Explorer" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Destination *</label>
+          <input type="text" id="trip-destination" required placeholder="e.g., Tokyo, Japan" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Start Date *</label>
+            <input type="date" id="trip-start" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">End Date *</label>
+            <input type="date" id="trip-end" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Budget Target</label>
+          <input type="number" step="0.01" id="trip-budget" placeholder="3500.00" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Cover Image URL</label>
+          <input type="url" id="trip-cover-url" placeholder="https://..." class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <div class="flex items-center gap-2 mt-2">
+            <span class="text-[10px] text-slate-400">Presets:</span>
+            <button type="button" onclick="copyPresetCover('https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80')" class="text-[10px] bg-obsidian-800 hover:bg-obsidian-700 px-2 py-1 rounded text-slate-300">Japan</button>
+            <button type="button" onclick="copyPresetCover('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80')" class="text-[10px] bg-obsidian-800 hover:bg-obsidian-700 px-2 py-1 rounded text-slate-300">Paris</button>
+            <button type="button" onclick="copyPresetCover('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80')" class="text-[10px] bg-obsidian-800 hover:bg-obsidian-700 px-2 py-1 rounded text-slate-300">Dubai</button>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Description / Notes</label>
+          <textarea id="trip-desc" rows="3" placeholder="Brief trip description..." class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-trip')" class="px-4 py-2 rounded-xl bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold shadow-md shadow-blue-600/30">Save Trip</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ACTIVITY MODAL -->
+  <div id="modal-activity" class="modal-dialog fixed inset-0 z-[1050] bg-obsidian-950/80 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-obsidian-950/60">
+        <h3 id="modal-activity-title" class="font-bold text-white text-sm font-mono">Add Activity</h3>
+        <button onclick="closeModal('modal-activity')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="saveActivityForm(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="act-id">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Activity Title *</label>
+          <input type="text" id="act-title" required placeholder="e.g., Visit Senso-ji Temple" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Date *</label>
+            <input type="date" id="act-date" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Time</label>
+            <input type="time" id="act-time" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Location</label>
+          <input type="text" id="act-location" placeholder="e.g., Asakusa, Tokyo" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Description / Details</label>
+          <textarea id="act-desc" rows="3" placeholder="Additional details..." class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-activity')" class="px-4 py-2 rounded-xl bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold shadow-md shadow-blue-600/30">Save Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EXPENSE MODAL -->
+  <div id="modal-expense" class="modal-dialog fixed inset-0 z-[1050] bg-obsidian-950/80 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-obsidian-950/60">
+        <h3 id="modal-expense-title" class="font-bold text-white text-sm font-mono">Record Expense</h3>
+        <button onclick="closeModal('modal-expense')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="saveExpenseForm(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="exp-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Amount *</label>
+            <input type="number" step="0.01" id="exp-amount" required placeholder="120.00" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Category *</label>
+            <select id="exp-category" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="Flights">Flights</option>
+              <option value="Lodging">Lodging</option>
+              <option value="Food">Food & Dining</option>
+              <option value="Activities">Activities</option>
+              <option value="Transport">Transport</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Date *</label>
+          <input type="date" id="exp-date" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Notes / Item Name</label>
+          <input type="text" id="exp-notes" placeholder="e.g., Dinner at Sushisho" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-expense')" class="px-4 py-2 rounded-xl bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold shadow-md shadow-blue-600/30">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PACKING ITEM MODAL -->
+  <div id="modal-packing" class="modal-dialog fixed inset-0 z-[1050] bg-obsidian-950/80 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-obsidian-950/60">
+        <h3 class="font-bold text-white text-sm font-mono">Add Packing Item</h3>
+        <button onclick="closeModal('modal-packing')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="savePackingForm(event)" class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Item Name *</label>
+          <input type="text" id="pack-name" required placeholder="e.g., Passport & Visa" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Category *</label>
+          <select id="pack-category" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="Clothing">Clothing</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Toiletries">Toiletries</option>
+            <option value="Documents">Documents</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Miscellaneous">Miscellaneous</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-packing')" class="px-4 py-2 rounded-xl bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold shadow-md shadow-blue-600/30">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESERVATION MODAL -->
+  <div id="modal-reservation" class="modal-dialog fixed inset-0 z-[1050] bg-obsidian-950/80 flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-obsidian-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-obsidian-950/60">
+        <h3 id="modal-reservation-title" class="font-bold text-white text-sm font-mono">Add Booking Reservation</h3>
+        <button onclick="closeModal('modal-reservation')" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="saveReservationForm(event)" class="p-5 space-y-4 text-xs">
+        <input type="hidden" id="res-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Booking Type *</label>
+            <select id="res-type" required class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="Flight">Flight</option>
+              <option value="Hotel">Hotel</option>
+              <option value="Train">Train</option>
+              <option value="Rental Car">Rental Car</option>
+              <option value="Restaurant">Restaurant</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-300 mb-1">Confirmation Code</label>
+            <input type="text" id="res-code" placeholder="e.g., JL-99382A" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Title / Provider *</label>
+          <input type="text" id="res-title" required placeholder="e.g., Japan Airlines JL005" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Date & Time</label>
+          <input type="datetime-local" id="res-datetime" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Seat / Room / Details</label>
+          <input type="text" id="res-details" placeholder="e.g., Seat 18A (Window)" class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Notes</label>
+          <textarea id="res-notes" rows="2" placeholder="Additional notes..." class="w-full bg-obsidian-950 border border-slate-800 text-slate-100 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        </div>
+        <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-reservation')" class="px-4 py-2 rounded-xl bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-bold shadow-md shadow-blue-600/30">Save Booking</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TASK-DRIVEN INTERACTIVE ONBOARDING TUTORIAL MODAL (NON-BLURRED) -->
+  <div id="modal-tutorial" class="modal-dialog fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-[1010] w-[calc(100%-2rem)] sm:w-full max-w-sm hidden pointer-events-auto">
+    <div class="glass-card bg-obsidian-900 border-2 border-blue-500 shadow-2xl rounded-2xl overflow-hidden">
+      <div class="p-3.5 bg-gradient-to-r from-obsidian-900 via-electric-950 to-obsidian-900 border-b border-slate-800 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+            <i class="fa-solid fa-compass"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-xs font-mono">Interactive Setup Guide</h3>
+            <p id="tut-step-count" class="text-[9px] text-blue-400 font-bold font-mono">Step 1 of 9</p>
+          </div>
+        </div>
+        <button onclick="skipTutorial()" class="text-slate-400 hover:text-white px-2 py-1 text-xs font-bold bg-obsidian-800 rounded-lg">Skip Guide</button>
+      </div>
+
+      <div class="p-4 space-y-2">
+        <h4 id="tut-title" class="text-sm font-bold text-slate-100 font-mono">Setup User Profile</h4>
+        <p id="tut-body" class="text-xs text-slate-300 leading-relaxed min-h-[50px]">
+          Welcome to TRAVORA! Let's get started by customizing your user profile name, handle, and preferred currency symbol.
+        </p>
+        <div id="tut-task-badge" class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-950 border border-blue-800/80 text-[10px] text-blue-400 font-bold font-mono">
+          <i class="fa-solid fa-hand-pointer text-xs animate-bounce"></i> Required Task: Save Profile Preferences
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-800/80 bg-obsidian-950/80 flex items-center justify-between">
+        <button onclick="skipTutorial()" class="text-xs text-slate-400 hover:text-slate-200 font-bold px-2">Skip</button>
+        <div class="flex gap-2">
+          <button id="tut-prev-btn" onclick="prevTutorialStep()" class="bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Back</button>
+          <button id="tut-next-btn" onclick="nextTutorialStep()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-md shadow-blue-600/30">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State Architecture
+    let appState = {
+      user: {
+        name: "Alex Traveler",
+        handle: "@alextravels",
+        homeCity: "San Francisco (SFO)",
+        currency: "$",
+        avatarColor: "#2563eb"
+      },
+      activeTripId: null,
+      trips: [],
+      activities: [],
+      expenses: [],
+      packingItems: [],
+      reservations: [],
+      notes: {},
+      tutorialCompleted: false
+    };
+
+    let notesDebounceTimer = null;
+
+    // Modal Helpers
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove("hidden");
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add("hidden");
+    }
+
+    // Toast Feedback Notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = `toast-animate flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold text-white pointer-events-auto border ${
+        type === 'error' ? 'bg-rose-950/90 border-rose-700' : 'bg-obsidian-900/95 border-blue-500/60'
+      }`;
+      toast.innerHTML = `
+        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation text-rose-400' : 'fa-circle-check text-blue-400'} text-base"></i>
+        <span>${escapeHTML(message)}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 3000);
+    }
+
+    // Default Seed Dataset
+    function seedDefaultData() {
+      const demoId = "trip_" + Date.now();
+      appState.trips = [
+        {
+          id: demoId,
+          name: "Tokyo & Kyoto Explorer",
+          destination: "Tokyo, Japan",
+          startDate: "2026-10-10",
+          endDate: "2026-10-22",
+          budget: 3800,
+          description: "Autumn foliage tour through Tokyo neon districts and historic Kyoto shrines.",
+          coverUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80"
+        }
+      ];
+      appState.activeTripId = demoId;
+
+      appState.activities = [
+        { id: "act_1", tripId: demoId, title: "Arrive at Narita Terminal 1", date: "2026-10-10", time: "15:30", location: "Narita Airport", description: "Take Skyliner Express train to hotel." },
+        { id: "act_2", tripId: demoId, title: "Explore Shibuya Crossing & Sky", date: "2026-10-11", time: "17:00", location: "Shibuya City", description: "Observation deck tickets booked." }
+      ];
+
+      appState.expenses = [
+        { id: "exp_1", tripId: demoId, amount: 1200, category: "Flights", date: "2026-09-01", notes: "Roundtrip Flight Ticket" },
+        { id: "exp_2", tripId: demoId, amount: 750, category: "Lodging", date: "2026-09-10", notes: "Shinjuku Hotel Deposit" }
+      ];
+
+      appState.packingItems = [
+        { id: "pack_1", tripId: demoId, name: "Passport & JR Rail Pass", category: "Documents", packed: true },
+        { id: "pack_2", tripId: demoId, name: "Power Bank & Adapter Plug", category: "Electronics", packed: false },
+        { id: "pack_3", tripId: demoId, name: "Walking Sneakers", category: "Clothing", packed: false }
+      ];
+
+      appState.reservations = [
+        { id: "res_1", tripId: demoId, type: "Flight", title: "Japan Airlines JL005", code: "JL-99382A", datetime: "2026-10-10T11:00", details: "Seat 18A (Window)", notes: "Carry-on allowance verified." }
+      ];
+
+      appState.notes[demoId] = "Emergency Contacts:\n- U.S. Embassy Tokyo: +81 3-3224-5000\n- Hotel Desk: Ext #01";
+    }
+
+    // Storage Synchronization
+    function saveAppState() {
+      try {
+        localStorage.setItem("travora_state_v4", JSON.stringify(appState));
+      } catch (e) {
+        console.error("Save error:", e);
+      }
+    }
+
+    function loadAppState() {
+      const stored = localStorage.getItem("travora_state_v4");
+      if (stored) {
+        try {
+          appState = JSON.parse(stored);
+        } catch (e) {
+          seedDefaultData();
+        }
+      } else {
+        seedDefaultData();
+      }
+    }
+
+    // Utilities
+    function logActivity(text) {
+      const logs = JSON.parse(localStorage.getItem("travora_logs") || "[]");
+      logs.unshift({ text, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+      if (logs.length > 10) logs.pop();
+      localStorage.setItem("travora_logs", JSON.stringify(logs));
+      renderActivityLog();
+    }
+
+    function renderActivityLog() {
+      const container = document.getElementById("dash-activity-log");
+      const logs = JSON.parse(localStorage.getItem("travora_logs") || "[]");
+      if (logs.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 text-center py-4">No recent activity logged.</p>`;
+        return;
+      }
+      container.innerHTML = logs.map(l => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-obsidian-950/60 border border-slate-800/60">
+          <span class="text-slate-300 font-medium">${escapeHTML(l.text)}</span>
+          <span class="text-[9px] text-slate-500 font-mono">${l.timestamp}</span>
+        </div>
+      `).join('');
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    function formatCurrency(val) {
+      const num = parseFloat(val) || 0;
+      return `${appState.user.currency || '$'}${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function copyPresetCover(url) {
+      document.getElementById("trip-cover-url").value = url;
+      showToast("Preset cover image selected!");
+    }
+
+    // Tab Navigation
+    function switchTab(tabName) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll(".nav-btn").forEach(el => el.classList.remove("bg-blue-600/10", "text-blue-400", "font-bold", "border-r-2", "border-blue-500"));
+
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.classList.remove("hidden");
+
+      const navBtn = document.getElementById(`nav-${tabName}`);
+      if (navBtn) navBtn.classList.add("bg-blue-600/10", "text-blue-400", "font-bold", "border-r-2", "border-blue-500");
+
+      const titleMap = {
+        dashboard: "Dashboard",
+        trips: "My Trips",
+        itinerary: "Itinerary Builder",
+        expenses: "Budget & Expenses",
+        packing: "Packing Checklist",
+        reservations: "Reservation Vault",
+        notes: "Trip Notes",
+        backup: "Backup & Portability",
+        profile: "Profile & Preferences"
+      };
+      document.getElementById("page-title").innerText = titleMap[tabName] || "Dashboard";
+
+      renderAllViews();
+
+      if (window.innerWidth < 1024) {
+        toggleSidebar(false);
+      }
+    }
+
+    function toggleSidebar(show) {
+      const sidebar = document.getElementById("sidebar");
+      const backdrop = document.getElementById("mobile-sidebar-backdrop");
+      if (show) {
+        sidebar.classList.remove("-translate-x-full");
+        backdrop.classList.remove("hidden");
+      } else {
+        sidebar.classList.add("-translate-x-full");
+        backdrop.classList.add("hidden");
+      }
+    }
+
+    function changeActiveTrip(id) {
+      appState.activeTripId = id;
+      saveAppState();
+      renderAllViews();
+      showToast("Active trip context updated");
+    }
+
+    function populateActiveTripSelector() {
+      const select = document.getElementById("active-trip-select");
+      select.innerHTML = "";
+      if (appState.trips.length === 0) {
+        select.innerHTML = `<option value="">No Trips Created</option>`;
+        return;
+      }
+      appState.trips.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.innerText = t.name;
+        if (t.id === appState.activeTripId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    // Render Master Pipeline
+    function renderAllViews() {
+      populateActiveTripSelector();
+      renderUserProfile();
+      renderDashboard();
+      renderTrips();
+      renderItinerary();
+      renderExpenses();
+      renderPacking();
+      renderReservations();
+      renderNotes();
+      renderActivityLog();
+    }
+
+    function renderUserProfile() {
+      document.getElementById("sidebar-user-name").innerText = appState.user.name;
+      document.getElementById("sidebar-user-handle").innerText = appState.user.handle || "@traveler";
+      const avatarEl = document.getElementById("sidebar-user-avatar");
+      avatarEl.innerText = (appState.user.name[0] || "A").toUpperCase();
+      avatarEl.style.backgroundColor = appState.user.avatarColor || "#2563eb";
+      
+      document.getElementById("dash-user-name").innerText = appState.user.name;
+      document.getElementById("prof-display-name").value = appState.user.name;
+      document.getElementById("prof-handle").value = appState.user.handle || "";
+      document.getElementById("prof-home-city").value = appState.user.homeCity || "";
+      document.getElementById("prof-currency").value = appState.user.currency || "$";
+      document.getElementById("prof-avatar-color").value = appState.user.avatarColor || "#2563eb";
+    }
+
+    function saveProfile(e) {
+      e.preventDefault();
+      appState.user.name = document.getElementById("prof-display-name").value.trim() || "Traveler";
+      appState.user.handle = document.getElementById("prof-handle").value.trim() || "@traveler";
+      appState.user.homeCity = document.getElementById("prof-home-city").value.trim();
+      appState.user.currency = document.getElementById("prof-currency").value;
+      appState.user.avatarColor = document.getElementById("prof-avatar-color").value;
+
+      saveAppState();
+      renderAllViews();
+      logActivity("Updated profile preferences");
+      showToast("Profile preferences saved!");
+    }
+
+    // DASHBOARD RENDERING
+    function renderDashboard() {
+      document.getElementById("dash-total-trips").innerText = appState.trips.length;
+      document.getElementById("dash-total-activities").innerText = appState.activities.length;
+
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+
+      // Countdown setup
+      if (activeTrip && activeTrip.startDate) {
+        document.getElementById("dash-countdown-trip-name").innerText = activeTrip.name;
+        document.getElementById("dash-countdown-subtext").innerText = `Departing on ${activeTrip.startDate}`;
+        updateCountdown(activeTrip.startDate);
+      } else {
+        document.getElementById("dash-countdown-trip-name").innerText = "No Active Upcoming Trip";
+        document.getElementById("dash-countdown-subtext").innerText = "Create or select a trip to track departure countdown";
+        document.getElementById("cd-days").innerText = "00";
+        document.getElementById("cd-hours").innerText = "00";
+        document.getElementById("cd-mins").innerText = "00";
+      }
+
+      // Total Spending calculation
+      const totalExp = appState.expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      document.getElementById("dash-total-expenses").innerText = formatCurrency(totalExp);
+
+      // Packing Progress
+      const activePacking = appState.packingItems.filter(p => !activeTrip || p.tripId === activeTrip.id);
+      const packedCount = activePacking.filter(p => p.packed).length;
+      document.getElementById("dash-packing-status").innerText = `${packedCount} / ${activePacking.length}`;
+
+      // Active Trip Quick View
+      const activeTripContainer = document.getElementById("dash-active-trip-view");
+      if (!activeTrip) {
+        activeTripContainer.innerHTML = `
+          <div class="text-center py-8 space-y-3">
+            <i class="fa-solid fa-plane text-4xl text-slate-600"></i>
+            <p class="text-xs text-slate-400">No active trip selected. Create your first trip to get started.</p>
+            <button onclick="openModal('modal-trip')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Create Trip</button>
+          </div>
+        `;
+        return;
+      }
+
+      const tripActivities = appState.activities.filter(a => a.tripId === activeTrip.id);
+      const tripExpenses = appState.expenses.filter(e => e.tripId === activeTrip.id);
+      const tripSpent = tripExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+
+      activeTripContainer.innerHTML = `
+        <div class="flex flex-col sm:flex-row gap-4 items-start">
+          <img src="${escapeHTML(activeTrip.coverUrl || 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80')}" onerror="this.src='https://placehold.co/600x400/090d16/3b82f6?text=TRAVORA'" class="w-full sm:w-36 h-28 object-cover rounded-xl border border-slate-700">
+          <div class="space-y-2 flex-1">
+            <h4 class="text-base font-bold text-white font-mono">${escapeHTML(activeTrip.name)}</h4>
+            <p class="text-xs text-blue-400 font-medium"><i class="fa-solid fa-location-dot"></i> ${escapeHTML(activeTrip.destination)}</p>
+            <p class="text-xs text-slate-400 font-mono"><i class="fa-solid fa-calendar"></i> ${activeTrip.startDate} — ${activeTrip.endDate}</p>
+            <p class="text-xs text-slate-300 line-clamp-2">${escapeHTML(activeTrip.description || 'No description provided.')}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
+          <div class="bg-obsidian-950 p-2.5 rounded-xl border border-slate-800">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase">Scheduled</span>
+            <span class="block text-sm font-bold text-white font-mono">${tripActivities.length} Events</span>
+          </div>
+          <div class="bg-obsidian-950 p-2.5 rounded-xl border border-slate-800">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase">Target Budget</span>
+            <span class="block text-sm font-bold text-blue-400 font-mono">${formatCurrency(activeTrip.budget || 0)}</span>
+          </div>
+          <div class="bg-obsidian-950 p-2.5 rounded-xl border border-slate-800">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase">Logged Spend</span>
+            <span class="block text-sm font-bold text-emerald-400 font-mono">${formatCurrency(tripSpent)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateCountdown(startDateStr) {
+      const target = new Date(startDateStr).getTime();
+      const now = new Date().getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        document.getElementById("cd-days").innerText = "00";
+        document.getElementById("cd-hours").innerText = "00";
+        document.getElementById("cd-mins").innerText = "00";
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      document.getElementById("cd-days").innerText = String(days).padStart(2, '0');
+      document.getElementById("cd-hours").innerText = String(hours).padStart(2, '0');
+      document.getElementById("cd-mins").innerText = String(mins).padStart(2, '0');
+    }
+
+    // TRIPS MANAGEMENT
+    function renderTrips() {
+      const container = document.getElementById("trips-grid");
+      if (appState.trips.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full glass-card p-8 rounded-2xl text-center space-y-3">
+            <i class="fa-solid fa-map-location-dot text-4xl text-slate-600"></i>
+            <h4 class="text-sm font-bold text-slate-300 font-mono">No Trips Found</h4>
+            <p class="text-xs text-slate-400">Click below to create your first travel itinerary.</p>
+            <button onclick="openModal('modal-trip')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Create Trip</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = appState.trips.map(t => {
+        const isActive = t.id === appState.activeTripId;
+        return `
+          <div class="glass-card rounded-2xl overflow-hidden border ${isActive ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-800'} flex flex-col justify-between">
+            <div class="relative h-40 bg-obsidian-950">
+              <img src="${escapeHTML(t.coverUrl || 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80')}" onerror="this.src='https://placehold.co/600x400/090d16/3b82f6?text=TRAVORA'" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-obsidian-950 via-transparent to-transparent"></div>
+              ${isActive ? '<span class="absolute top-3 right-3 bg-blue-600 text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">Active</span>' : ''}
+            </div>
+            <div class="p-5 space-y-3 flex-1 flex flex-col justify-between">
+              <div>
+                <h4 class="font-bold text-white text-base font-mono">${escapeHTML(t.name)}</h4>
+                <p class="text-xs text-blue-400 font-medium mt-1"><i class="fa-solid fa-location-dot"></i> ${escapeHTML(t.destination)}</p>
+                <p class="text-xs text-slate-400 font-mono mt-1"><i class="fa-solid fa-calendar"></i> ${t.startDate} to ${t.endDate}</p>
+                <p class="text-xs text-slate-300 mt-2 line-clamp-2">${escapeHTML(t.description || 'No description.')}</p>
+              </div>
+              <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-slate-300">${formatCurrency(t.budget || 0)}</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="editTrip('${t.id}')" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-obsidian-800" title="Edit Trip"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button onclick="deleteTrip('${t.id}')" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-obsidian-800" title="Delete Trip"><i class="fa-solid fa-trash-can"></i></button>
+                  ${!isActive ? `<button onclick="changeActiveTrip('${t.id}')" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all">Select</button>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveTripForm(e) {
+      e.preventDefault();
+      const id = document.getElementById("trip-id").value;
+      const name = document.getElementById("trip-name").value.trim();
+      const destination = document.getElementById("trip-destination").value.trim();
+      const startDate = document.getElementById("trip-start").value;
+      const endDate = document.getElementById("trip-end").value;
+      const budget = parseFloat(document.getElementById("trip-budget").value) || 0;
+      const coverUrl = document.getElementById("trip-cover-url").value.trim();
+      const description = document.getElementById("trip-desc").value.trim();
+
+      if (id) {
+        const trip = appState.trips.find(t => t.id === id);
+        if (trip) {
+          Object.assign(trip, { name, destination, startDate, endDate, budget, coverUrl, description });
+          logActivity(`Updated trip: ${name}`);
+          showToast("Trip updated successfully!");
+        }
+      } else {
+        const newTrip = { id: "trip_" + Date.now(), name, destination, startDate, endDate, budget, coverUrl, description };
+        appState.trips.push(newTrip);
+        if (!appState.activeTripId) appState.activeTripId = newTrip.id;
+        logActivity(`Created trip: ${name}`);
+        showToast("New trip created!");
+      }
+
+      saveAppState();
+      closeModal('modal-trip');
+      document.getElementById("form-trip").reset();
+      document.getElementById("trip-id").value = "";
+      renderAllViews();
+    }
+
+    function editTrip(id) {
+      const trip = appState.trips.find(t => t.id === id);
+      if (!trip) return;
+      document.getElementById("trip-id").value = trip.id;
+      document.getElementById("trip-name").value = trip.name;
+      document.getElementById("trip-destination").value = trip.destination;
+      document.getElementById("trip-start").value = trip.startDate;
+      document.getElementById("trip-end").value = trip.endDate;
+      document.getElementById("trip-budget").value = trip.budget || "";
+      document.getElementById("trip-cover-url").value = trip.coverUrl || "";
+      document.getElementById("trip-desc").value = trip.description || "";
+      document.getElementById("modal-trip-title").innerText = "Edit Trip";
+      openModal('modal-trip');
+    }
+
+    function deleteTrip(id) {
+      const trip = appState.trips.find(t => t.id === id);
+      if (!trip) return;
+      if (confirm(`Are you sure you want to delete "${trip.name}"?`)) {
+        appState.trips = appState.trips.filter(t => t.id !== id);
+        appState.activities = appState.activities.filter(a => a.tripId !== id);
+        appState.expenses = appState.expenses.filter(e => e.tripId !== id);
+        appState.packingItems = appState.packingItems.filter(p => p.tripId !== id);
+        appState.reservations = appState.reservations.filter(r => r.tripId !== id);
+        delete appState.notes[id];
+
+        if (appState.activeTripId === id) {
+          appState.activeTripId = appState.trips.length > 0 ? appState.trips[0].id : null;
+        }
+
+        saveAppState();
+        renderAllViews();
+        logActivity(`Deleted trip: ${trip.name}`);
+        showToast("Trip deleted", "error");
+      }
+    }
+
+    // ITINERARY MANAGEMENT
+    function renderItinerary() {
+      const container = document.getElementById("itinerary-list");
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+
+      if (!activeTrip) {
+        container.innerHTML = `<p class="text-slate-500 text-center py-6">Select or create an active trip to build your itinerary timeline.</p>`;
+        return;
+      }
+
+      const activities = appState.activities
+        .filter(a => a.tripId === activeTrip.id)
+        .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+      if (activities.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 space-y-3">
+            <i class="fa-solid fa-calendar-plus text-4xl text-slate-600"></i>
+            <p class="text-xs text-slate-400">No activities planned for "${escapeHTML(activeTrip.name)}".</p>
+            <button onclick="openModal('modal-activity')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Add First Activity</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = activities.map(a => `
+        <div class="flex items-start gap-4 p-4 rounded-xl bg-obsidian-950/80 border border-slate-800 hover:border-slate-700 transition-colors">
+          <div class="bg-blue-950/80 text-blue-400 border border-blue-800/80 px-3 py-2 rounded-xl font-mono text-center min-w-[70px]">
+            <span class="block text-xs font-bold">${a.date.split('-').slice(1).join('/')}</span>
+            <span class="block text-[10px] text-slate-400">${a.time || 'All Day'}</span>
+          </div>
+          <div class="flex-1 min-w-0 space-y-1">
+            <h4 class="font-bold text-white text-sm font-mono">${escapeHTML(a.title)}</h4>
+            ${a.location ? `<p class="text-xs text-blue-400"><i class="fa-solid fa-location-dot"></i> ${escapeHTML(a.location)}</p>` : ''}
+            ${a.description ? `<p class="text-xs text-slate-300 leading-relaxed">${escapeHTML(a.description)}</p>` : ''}
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="editActivity('${a.id}')" class="p-2 text-slate-400 hover:text-white rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button onclick="deleteActivity('${a.id}')" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function saveActivityForm(e) {
+      e.preventDefault();
+      if (!appState.activeTripId) {
+        showToast("Please create or select an active trip first.", "error");
+        return;
+      }
+
+      const id = document.getElementById("act-id").value;
+      const title = document.getElementById("act-title").value.trim();
+      const date = document.getElementById("act-date").value;
+      const time = document.getElementById("act-time").value;
+      const location = document.getElementById("act-location").value.trim();
+      const description = document.getElementById("act-desc").value.trim();
+
+      if (id) {
+        const act = appState.activities.find(a => a.id === id);
+        if (act) {
+          Object.assign(act, { title, date, time, location, description });
+          logActivity(`Updated activity: ${title}`);
+        }
+      } else {
+        appState.activities.push({
+          id: "act_" + Date.now(),
+          tripId: appState.activeTripId,
+          title, date, time, location, description
+        });
+        logActivity(`Added activity: ${title}`);
+      }
+
+      saveAppState();
+      closeModal('modal-activity');
+      document.getElementById("act-id").value = "";
+      renderAllViews();
+      showToast("Activity saved!");
+    }
+
+    function editActivity(id) {
+      const act = appState.activities.find(a => a.id === id);
+      if (!act) return;
+      document.getElementById("act-id").value = act.id;
+      document.getElementById("act-title").value = act.title;
+      document.getElementById("act-date").value = act.date;
+      document.getElementById("act-time").value = act.time || "";
+      document.getElementById("act-location").value = act.location || "";
+      document.getElementById("act-desc").value = act.description || "";
+      document.getElementById("modal-activity-title").innerText = "Edit Activity";
+      openModal('modal-activity');
+    }
+
+    function deleteActivity(id) {
+      const act = appState.activities.find(a => a.id === id);
+      if (act && confirm(`Delete activity "${act.title}"?`)) {
+        appState.activities = appState.activities.filter(a => a.id !== id);
+        saveAppState();
+        renderAllViews();
+        logActivity(`Deleted activity: ${act.title}`);
+        showToast("Activity deleted");
+      }
+    }
+
+    // EXPENSES MANAGEMENT
+    function renderExpenses() {
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+      const budgetTotal = activeTrip ? (parseFloat(activeTrip.budget) || 0) : 0;
+      
+      const tripExpenses = appState.expenses.filter(e => !activeTrip || e.tripId === activeTrip.id);
+      const spentTotal = tripExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+      const remaining = budgetTotal - spentTotal;
+      const usagePercent = budgetTotal > 0 ? Math.min(100, Math.round((spentTotal / budgetTotal) * 100)) : 0;
+
+      document.getElementById("budget-total").innerText = formatCurrency(budgetTotal);
+      document.getElementById("budget-spent").innerText = formatCurrency(spentTotal);
+      document.getElementById("budget-remaining").innerText = formatCurrency(remaining);
+      document.getElementById("budget-percent-text").innerText = `${usagePercent}%`;
+
+      const progressBar = document.getElementById("budget-progress-bar");
+      progressBar.style.width = `${usagePercent}%`;
+      if (usagePercent > 90) {
+        progressBar.className = "bg-rose-500 h-3 rounded-full transition-all duration-500";
+      } else {
+        progressBar.className = "bg-blue-600 h-3 rounded-full transition-all duration-500";
+      }
+
+      // Category breakdown
+      const categories = ['Flights', 'Lodging', 'Food', 'Activities', 'Transport', 'Shopping', 'Other'];
+      const catTotals = {};
+      categories.forEach(c => catTotals[c] = 0);
+      tripExpenses.forEach(e => {
+        catTotals[e.category] = (catTotals[e.category] || 0) + (parseFloat(e.amount) || 0);
+      });
+
+      document.getElementById("expense-category-breakdown").innerHTML = categories.map(c => `
+        <div class="bg-obsidian-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+          <span class="text-slate-400 font-medium">${c}</span>
+          <span class="font-bold font-mono text-white">${formatCurrency(catTotals[c])}</span>
+        </div>
+      `).join('');
+
+      // Table body
+      const tbody = document.getElementById("expense-table-body");
+      if (tripExpenses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500 text-xs">No expenses logged.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = tripExpenses.map(e => `
+        <tr class="hover:bg-obsidian-900/40 text-xs font-mono">
+          <td class="py-3 px-3 text-slate-400">${e.date}</td>
+          <td class="py-3 px-3 font-bold text-blue-400">${escapeHTML(e.category)}</td>
+          <td class="py-3 px-3 text-slate-300">${escapeHTML(e.notes || '-')}</td>
+          <td class="py-3 px-3 text-right font-bold text-white">${formatCurrency(e.amount)}</td>
+          <td class="py-3 px-3 text-center">
+            <button onclick="deleteExpense('${e.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function saveExpenseForm(e) {
+      e.preventDefault();
+      if (!appState.activeTripId) {
+        showToast("Please create or select an active trip first.", "error");
+        return;
+      }
+
+      const id = document.getElementById("exp-id").value;
+      const amount = parseFloat(document.getElementById("exp-amount").value) || 0;
+      const category = document.getElementById("exp-category").value;
+      const date = document.getElementById("exp-date").value;
+      const notes = document.getElementById("exp-notes").value.trim();
+
+      if (id) {
+        const exp = appState.expenses.find(e => e.id === id);
+        if (exp) Object.assign(exp, { amount, category, date, notes });
+      } else {
+        appState.expenses.push({
+          id: "exp_" + Date.now(),
+          tripId: appState.activeTripId,
+          amount, category, date, notes
+        });
+        logActivity(`Logged expense: ${formatCurrency(amount)} (${category})`);
+      }
+
+      saveAppState();
+      closeModal('modal-expense');
+      document.getElementById("exp-id").value = "";
+      renderAllViews();
+      showToast("Expense logged!");
+    }
+
+    function deleteExpense(id) {
+      const exp = appState.expenses.find(e => e.id === id);
+      if (exp && confirm("Delete expense entry?")) {
+        appState.expenses = appState.expenses.filter(e => e.id !== id);
+        saveAppState();
+        renderAllViews();
+        showToast("Expense removed");
+      }
+    }
+
+    // PACKING CHECKLIST MANAGEMENT
+    function renderPacking() {
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+      const items = appState.packingItems.filter(p => !activeTrip || p.tripId === activeTrip.id);
+
+      const packedCount = items.filter(p => p.packed).length;
+      const progressPercent = items.length > 0 ? Math.round((packedCount / items.length) * 100) : 0;
+
+      document.getElementById("packing-progress-text").innerText = `${progressPercent}% Packed (${packedCount}/${items.length})`;
+      document.getElementById("packing-progress-bar").style.width = `${progressPercent}%`;
+
+      const categories = ['Clothing', 'Electronics', 'Toiletries', 'Documents', 'Accessories', 'Miscellaneous'];
+      const grid = document.getElementById("packing-categories-grid");
+
+      grid.innerHTML = categories.map(cat => {
+        const catItems = items.filter(i => i.category === cat);
+        return `
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+            <h4 class="font-bold text-xs uppercase tracking-wider text-slate-300 font-mono border-b border-slate-800 pb-2">${cat}</h4>
+            <div class="space-y-2">
+              ${catItems.length === 0 ? '<p class="text-[11px] text-slate-500 italic">No items</p>' : ''}
+              ${catItems.map(item => `
+                <div class="flex items-center justify-between text-xs p-2 rounded-xl bg-obsidian-950/60 border border-slate-800/60">
+                  <label class="flex items-center gap-2 cursor-pointer min-w-0">
+                    <input type="checkbox" ${item.packed ? 'checked' : ''} onchange="togglePackingItem('${item.id}')" class="w-4 h-4 rounded border-slate-700 text-blue-600 focus:ring-blue-500 bg-obsidian-900 cursor-pointer">
+                    <span class="${item.packed ? 'line-through text-slate-500' : 'text-slate-200'} font-medium truncate">${escapeHTML(item.name)}</span>
+                  </label>
+                  <button onclick="deletePackingItem('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function savePackingForm(e) {
+      e.preventDefault();
+      if (!appState.activeTripId) {
+        showToast("Please select an active trip first.", "error");
+        return;
+      }
+
+      const name = document.getElementById("pack-name").value.trim();
+      const category = document.getElementById("pack-category").value;
+
+      appState.packingItems.push({
+        id: "pack_" + Date.now(),
+        tripId: appState.activeTripId,
+        name, category, packed: false
+      });
+
+      saveAppState();
+      closeModal('modal-packing');
+      document.getElementById("pack-name").value = "";
+      renderAllViews();
+      showToast("Item added to packing list!");
+    }
+
+    function togglePackingItem(id) {
+      const item = appState.packingItems.find(p => p.id === id);
+      if (item) {
+        item.packed = !item.packed;
+        saveAppState();
+        renderAllViews();
+      }
+    }
+
+    function deletePackingItem(id) {
+      appState.packingItems = appState.packingItems.filter(p => p.id !== id);
+      saveAppState();
+      renderAllViews();
+    }
+
+    // RESERVATIONS VAULT MANAGEMENT
+    function renderReservations() {
+      const container = document.getElementById("reservations-list");
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+
+      const items = appState.reservations.filter(r => !activeTrip || r.tripId === activeTrip.id);
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full glass-card p-8 rounded-2xl text-center space-y-3">
+            <i class="fa-solid fa-ticket text-4xl text-slate-600"></i>
+            <h4 class="text-sm font-bold text-slate-300 font-mono">No Booking Reservations</h4>
+            <p class="text-xs text-slate-400">Save your flight codes, hotel bookings, or train vouchers here.</p>
+            <button onclick="openModal('modal-reservation')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">Add Booking</button>
+          </div>
+        `;
+        return;
+      }
+
+      const icons = {
+        Flight: 'fa-plane text-blue-400',
+        Hotel: 'fa-hotel text-indigo-400',
+        Train: 'fa-train text-sky-400',
+        'Rental Car': 'fa-car text-amber-400',
+        Restaurant: 'fa-utensils text-rose-400'
+      };
+
+      container.innerHTML = items.map(r => `
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between">
+          <div class="space-y-2">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid ${icons[r.type] || 'fa-ticket text-blue-400'} text-base"></i>
+                <span class="text-xs font-bold text-white font-mono">${escapeHTML(r.type)}</span>
+              </div>
+              ${r.code ? `<span class="bg-blue-950 text-blue-400 border border-blue-800/80 px-2 py-0.5 rounded text-[10px] font-mono font-bold">${escapeHTML(r.code)}</span>` : ''}
+            </div>
+            <h4 class="font-bold text-white text-sm font-mono">${escapeHTML(r.title)}</h4>
+            ${r.datetime ? `<p class="text-xs text-slate-400 font-mono"><i class="fa-solid fa-clock"></i> ${new Date(r.datetime).toLocaleString()}</p>` : ''}
+            ${r.details ? `<p class="text-xs text-slate-300"><i class="fa-solid fa-info-circle"></i> ${escapeHTML(r.details)}</p>` : ''}
+            ${r.notes ? `<p class="text-xs text-slate-400 italic">${escapeHTML(r.notes)}</p>` : ''}
+          </div>
+          <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+            <button onclick="deleteReservation('${r.id}')" class="text-slate-400 hover:text-rose-400 text-xs font-bold p-1"><i class="fa-solid fa-trash-can"></i> Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function saveReservationForm(e) {
+      e.preventDefault();
+      if (!appState.activeTripId) {
+        showToast("Please select an active trip first.", "error");
+        return;
+      }
+
+      const type = document.getElementById("res-type").value;
+      const code = document.getElementById("res-code").value.trim();
+      const title = document.getElementById("res-title").value.trim();
+      const datetime = document.getElementById("res-datetime").value;
+      const details = document.getElementById("res-details").value.trim();
+      const notes = document.getElementById("res-notes").value.trim();
+
+      appState.reservations.push({
+        id: "res_" + Date.now(),
+        tripId: appState.activeTripId,
+        type, code, title, datetime, details, notes
+      });
+
+      saveAppState();
+      closeModal('modal-reservation');
+      renderAllViews();
+      showToast("Booking reservation saved!");
+    }
+
+    function deleteReservation(id) {
+      if (confirm("Delete reservation voucher?")) {
+        appState.reservations = appState.reservations.filter(r => r.id !== id);
+        saveAppState();
+        renderAllViews();
+        showToast("Reservation deleted");
+      }
+    }
+
+    // NOTES MANAGEMENT
+    function renderNotes() {
+      const activeTripId = appState.activeTripId;
+      const textarea = document.getElementById("trip-notes-textarea");
+
+      if (!activeTripId) {
+        textarea.value = "";
+        textarea.disabled = true;
+        textarea.placeholder = "Select an active trip to take notes...";
+        document.getElementById("notes-word-count").innerText = "0 words";
+        return;
+      }
+
+      textarea.disabled = false;
+      textarea.value = appState.notes[activeTripId] || "";
+      updateWordCount(textarea.value);
+    }
+
+    function handleNotesInput() {
+      const activeTripId = appState.activeTripId;
+      if (!activeTripId) return;
+
+      const val = document.getElementById("trip-notes-textarea").value;
+      appState.notes[activeTripId] = val;
+      updateWordCount(val);
+
+      const statusEl = document.getElementById("notes-save-status");
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Saving...`;
+
+      clearTimeout(notesDebounceTimer);
+      notesDebounceTimer = setTimeout(() => {
+        saveAppState();
+        statusEl.innerHTML = `<i class="fa-solid fa-check-circle"></i> Saved`;
+      }, 500);
+    }
+
+    function updateWordCount(str) {
+      const words = str.trim() ? str.trim().split(/\s+/).length : 0;
+      document.getElementById("notes-word-count").innerText = `${words} words`;
+    }
+
+    // BACKUP & IMPORT/EXPORT MANAGEMENT
+    function exportActiveTripJSON() {
+      if (!appState.activeTripId) {
+        showToast("No active trip selected for export.", "error");
+        return;
+      }
+
+      const activeTrip = appState.trips.find(t => t.id === appState.activeTripId);
+      const snapshot = {
+        trip: activeTrip,
+        activities: appState.activities.filter(a => a.tripId === activeTrip.id),
+        expenses: appState.expenses.filter(e => e.tripId === activeTrip.id),
+        packingItems: appState.packingItems.filter(p => p.tripId === activeTrip.id),
+        reservations: appState.reservations.filter(r => r.tripId === activeTrip.id),
+        notes: appState.notes[activeTrip.id] || ""
+      };
+
+      downloadJSON(snapshot, `TRAVORA_Trip_${activeTrip.name.replace(/\s+/g, '_')}.json`);
+      showToast("Active trip JSON exported!");
+    }
+
+    function exportAllDataJSON() {
+      downloadJSON(appState, `TRAVORA_Full_Database_Backup_${Date.now()}.json`);
+      showToast("Full database backup JSON exported!");
+    }
+
+    function downloadJSON(obj, filename) {
+      const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(obj, null, 2));
+      const anchor = document.createElement("a");
+      anchor.setAttribute("href", str);
+      anchor.setAttribute("download", filename);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function importDataJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (parsed.trips && Array.isArray(parsed.trips)) {
+            appState = parsed;
+            saveAppState();
+            renderAllViews();
+            showToast("Database state successfully restored!");
+          } else if (parsed.trip && parsed.trip.id) {
+            // Single trip import
+            appState.trips.push(parsed.trip);
+            if (parsed.activities) appState.activities.push(...parsed.activities);
+            if (parsed.expenses) appState.expenses.push(...parsed.expenses);
+            if (parsed.packingItems) appState.packingItems.push(...parsed.packingItems);
+            if (parsed.reservations) appState.reservations.push(...parsed.reservations);
+            if (parsed.notes) appState.notes[parsed.trip.id] = parsed.notes;
+
+            appState.activeTripId = parsed.trip.id;
+            saveAppState();
+            renderAllViews();
+            showToast(`Imported trip "${parsed.trip.name}"!`);
+          } else {
+            showToast("Invalid TRAVORA JSON backup structure.", "error");
+          }
+        } catch (err) {
+          showToast("Failed to parse JSON file.", "error");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Dynamic Spotlight Onboarding Engine (No Blur Overlay)
+    const interactiveTutorialSteps = [
+      {
+        stepId: "step_profile",
+        tab: "profile",
+        targetId: "profile-form",
+        title: "1. Setup User Profile & Currency",
+        body: "Personalize your display identity, home airport, and preferred currency symbol for budget calculations.",
+        actionRequired: "save_profile",
+        taskText: "Task: Save Profile Preferences"
+      },
+      {
+        stepId: "step_create_trip",
+        tab: "dashboard",
+        targetId: "tut-target-newtrip-btn",
+        title: "2. Create Your Trip",
+        body: "Click the highlighted 'New Trip' button to set up your destination, departure schedule, and target budget.",
+        actionRequired: "click_new_trip",
+        taskText: "Task: Click 'New Trip' Button"
+      },
+      {
+        stepId: "step_fill_trip_form",
+        tab: "dashboard",
+        targetId: "form-trip",
+        title: "3. Save Trip Details",
+        body: "Enter your trip title, destination, dates, and budget in the form, then click 'Save Trip'.",
+        actionRequired: "save_trip",
+        taskText: "Task: Complete & Save Trip Form"
+      },
+      {
+        stepId: "step_itinerary",
+        tab: "itinerary",
+        targetId: "tut-target-add-activity-btn",
+        title: "4. Schedule Itinerary Activities",
+        body: "Organize daily activities chronologically. Click 'Add Activity' to schedule events and locations.",
+        actionRequired: "add_activity",
+        taskText: "Task: Add an Itinerary Activity"
+      },
+      {
+        stepId: "step_expenses",
+        tab: "expenses",
+        targetId: "tut-target-budget-card",
+        title: "5. Budget & Expense Tracking",
+        body: "Track category spending against your overall trip budget limit with live visual progress bars.",
+        actionRequired: null,
+        taskText: "Explore: Budget Overview Card"
+      },
+      {
+        stepId: "step_packing",
+        tab: "packing",
+        targetId: "tut-target-add-packing-btn",
+        title: "6. Packing Gear Checklist",
+        body: "Create categorized lists of gear, documents, and apparel to ensure nothing is left behind.",
+        actionRequired: null,
+        taskText: "Explore: Packing Checklist Tool"
+      },
+      {
+        stepId: "step_reservations",
+        tab: "reservations",
+        targetId: "tut-target-add-res-btn",
+        title: "7. Reservation Vault",
+        body: "Safely store confirmation codes, flight seats, hotel vouchers, and dining tickets.",
+        actionRequired: null,
+        taskText: "Explore: Reservation Storage"
+      },
+      {
+        stepId: "step_notes",
+        tab: "notes",
+        targetId: "tut-target-notes-area",
+        title: "8. Auto-Saving Trip Notepad",
+        body: "Write freeform notes, emergency contacts, or research. Everything automatically syncs to localStorage.",
+        actionRequired: null,
+        taskText: "Explore: Trip Notes Journal"
+      },
+      {
+        stepId: "step_backup",
+        tab: "backup",
+        targetId: "tut-target-export",
+        title: "9. Offline Backup & Data Export",
+        body: "Download your full dataset or individual trip JSON snapshots to keep your data portable and secure offline.",
+        actionRequired: null,
+        taskText: "Explore: JSON Data Export"
+      }
+    ];
+
+    let currentTutorialStep = 0;
+    let isInteractiveTutorialActive = false;
+
+    function clearTutorialHighlights() {
+      document.querySelectorAll(".tutorial-spotlight, .tutorial-spotlight-modal").forEach(el => {
+        el.classList.remove("tutorial-spotlight", "tutorial-spotlight-modal");
+      });
+    }
+
+    function scrollToFocusedTarget(targetEl) {
+      if (!targetEl) return;
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
+
+    function startInteractiveTutorial() {
+      currentTutorialStep = 0;
+      isInteractiveTutorialActive = true;
+      document.getElementById("modal-tutorial").classList.remove("hidden");
+      executeTutorialStep();
+    }
+
+    function executeTutorialStep() {
+      clearTutorialHighlights();
+
+      const step = interactiveTutorialSteps[currentTutorialStep];
+      if (step.tab) {
+        switchTab(step.tab);
+      }
+
+      document.getElementById("tut-step-count").innerText = `Step ${currentTutorialStep + 1} of ${interactiveTutorialSteps.length}`;
+      document.getElementById("tut-title").innerText = step.title;
+      document.getElementById("tut-body").innerText = step.body;
+
+      const badge = document.getElementById("tut-task-badge");
+      if (step.taskText) {
+        badge.innerHTML = `<i class="fa-solid fa-hand-pointer text-xs animate-bounce"></i> ${step.taskText}`;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+
+      document.getElementById("tut-prev-btn").disabled = currentTutorialStep === 0;
+      document.getElementById("tut-prev-btn").classList.toggle("opacity-40", currentTutorialStep === 0);
+
+      const nextBtn = document.getElementById("tut-next-btn");
+      if (currentTutorialStep === interactiveTutorialSteps.length - 1) {
+        nextBtn.innerText = "Finish Guide";
+      } else {
+        nextBtn.innerText = "Next Step";
+      }
+
+      if (step.targetId) {
+        setTimeout(() => {
+          const targetEl = document.getElementById(step.targetId);
+          if (targetEl) {
+            targetEl.classList.add(targetEl.closest('.modal-dialog') ? "tutorial-spotlight-modal" : "tutorial-spotlight");
+            scrollToFocusedTarget(targetEl);
+          }
+        }, 300);
+      }
+    }
+
+    function nextTutorialStep() {
+      const step = interactiveTutorialSteps[currentTutorialStep];
+      if (step.actionRequired === "save_profile" && (!appState.user.name || appState.user.name === "Traveler")) {
+        showToast("Please save profile preferences to continue step.", "error");
+        return;
+      }
+
+      if (currentTutorialStep < interactiveTutorialSteps.length - 1) {
+        currentTutorialStep++;
+        executeTutorialStep();
+      } else {
+        skipTutorial();
+      }
+    }
+
+    function prevTutorialStep() {
+      if (currentTutorialStep > 0) {
+        currentTutorialStep--;
+        executeTutorialStep();
+      }
+    }
+
+    function skipTutorial() {
+      clearTutorialHighlights();
+      isInteractiveTutorialActive = false;
+      document.getElementById("modal-tutorial").classList.add("hidden");
+      appState.tutorialCompleted = true;
+      saveAppState();
+      showToast("Interactive tour complete! You are ready to plan.");
+    }
+
+    // Intercept form saves to advance tutorial automatically
+    const origSaveTripForm = saveTripForm;
+    saveTripForm = function(e) {
+      origSaveTripForm(e);
+      if (isInteractiveTutorialActive && (currentTutorialStep === 1 || currentTutorialStep === 2)) {
+        currentTutorialStep = 3;
+        executeTutorialStep();
+      }
+    };
+
+    const origSaveProfile = saveProfile;
+    saveProfile = function(e) {
+      origSaveProfile(e);
+      if (isInteractiveTutorialActive && currentTutorialStep === 0) {
+        currentTutorialStep = 1;
+        executeTutorialStep();
+      }
+    };
+
+    const origSaveActivityForm = saveActivityForm;
+    saveActivityForm = function(e) {
+      origSaveActivityForm(e);
+      if (isInteractiveTutorialActive && currentTutorialStep === 3) {
+        currentTutorialStep = 4;
+        executeTutorialStep();
+      }
+    };
+
+    // Initialize application on window load
+    window.onload = function() {
+      loadAppState();
+      renderAllViews();
+      switchTab('dashboard');
+
+      if (!appState.tutorialCompleted) {
+        setTimeout(startInteractiveTutorial, 600);
+      }
+    };
+  </script>
+</body>
+</html>
